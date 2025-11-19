@@ -1,0 +1,549 @@
+openapi: 3.0.0
+info:
+  title: TravelerTrack API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+      required: [code, message]
+      
+    Timestamp:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp (e.g., "2025-10-09T12:34:56Z")
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+      required: [id, username, email]
+
+    UserCreateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+      required: [username, email]
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+
+    Location:
+      type: object
+      properties:
+        latitude:
+          type: number
+          format: double
+        longitude:
+          type: number
+          format: double
+      required: [latitude, longitude]
+
+    Place:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        address:
+          type: string
+        averageRating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+        createdAt:
+          $ref: '#/components/schemas/Timestamp'
+      required: [id, name, description, location, address]
+
+    PlaceCreateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        address:
+          type: string
+        averageRating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+
+    PlaceUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        address:
+          type: string
+        averageRating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+
+    VisitedPlaceResponse:
+      type: object
+      properties:
+        visited:
+          type: boolean
+          description: True if the user has visited the place, false otherwise.
+        message:
+          type: string
+          description: Status message.
+      required: [visited, message]
+  
+paths:
+  /users:
+    get:
+      summary: Get all users
+      operationId: getUsers
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create a new user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreateRequest'
+      responses:
+        '201':
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Username or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete all users
+      operationId: deleteAllUsers
+      responses:
+        '204':
+          description: All users deleted
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
+  /users/{id}:
+    get:
+      summary: Get a user by ID
+      operationId: getUserById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    patch:
+      summary: Update an existing user
+      operationId: updateUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+      responses:
+        '200':
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a user
+      operationId: deleteUser
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: User deleted successfully
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /users/{id}/places/{place_id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The ID of the user.
+        schema:
+          type: string
+          format: uuid
+      - name: place_id
+        in: path
+        required: true
+        description: The ID of the place.
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Add a place to a user's visited list
+      operationId: addVisitedPlace
+      responses:
+        '201':
+          description: Place successfully added to the user's visited list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: place added to user's visited list
+        '400':
+          description: Invalid User or Place ID format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User or Place not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict (Place already marked as visited for this user).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      summary: Check if a user has visited a specific place
+      operationId: checkIfVisited
+      responses:
+        '200':
+          description: Status of whether the user has visited the place.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VisitedPlaceResponse'
+        '400':
+          description: Invalid User or Place ID format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: User or Place not found (ID does not exist).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /places:
+    get:
+      summary: Get all places
+      operationId: getPlaces
+      responses:
+        '200':
+          description: List of places
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Place'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      summary: Create a new place
+      operationId: createPlace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceCreateRequest'
+      responses:
+        '201':
+          description: Place created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          description: Invalid place data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete all places
+      operationId: deleteAllPlaces
+      responses:
+        '204':
+          description: All places deleted
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /places/{id}:
+    get:
+      summary: Get a place by ID
+      operationId: getPlaceById
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Place found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '404':
+          description: Place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      summary: Update an existing place
+      operationId: updatePlace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceUpdateRequest'
+      responses:
+        '200':
+          description: Updated place
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Place'
+        '400':
+          description: Invalid place data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      summary: Delete a place
+      operationId: deletePlace
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Place deleted
+        '404':
+          description: Place not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
