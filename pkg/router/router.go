@@ -16,6 +16,9 @@ type Config struct {
 func NewRouter(cfg Config) http.Handler {
 	mux := http.NewServeMux()
 
+	fs := http.FileServer(http.Dir("./static"))
+	mux.Handle("GET /", fs)
+
 	mux.HandleFunc("GET /users", cfg.UserHandler.GetAll)
 	mux.HandleFunc("POST /users", cfg.UserHandler.Create)
 	mux.HandleFunc("DELETE /users", cfg.UserHandler.DeleteAll)
@@ -26,6 +29,7 @@ func NewRouter(cfg Config) http.Handler {
 
 	mux.HandleFunc("POST /users/{id}/places/{place_id}", cfg.UserHandler.AddVisitedPlace)
 	mux.HandleFunc("GET /users/{id}/places/{place_id}", cfg.UserHandler.CheckIfVisited)
+	mux.HandleFunc("DELETE /users/{id}/places/{place_id}", cfg.UserHandler.RemoveVisitedPlace)
 
 	mux.HandleFunc("GET /places", cfg.PlaceHandler.GetAll)
 	mux.HandleFunc("POST /places", cfg.PlaceHandler.Create)

@@ -1,0 +1,9 @@
+{
+    "server_port": "8080",
+    "log_level": "info",
+    "enable_cache": true,
+    "request_timeout_seconds": 30,
+    "max_connections": 100,
+    "enable_request_logging": true,
+    "allow_place_deletion": false
+}

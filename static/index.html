@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Places Tracker | ASCII Edition</title>
+    <meta name="description" content="Track your visited places in retro terminal style">
+
+    <link rel="stylesheet" href="/styles.css">
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="welcome-screen" class="welcome-screen">
+            <div class="ascii-box">
+                <pre class="ascii-logo">
+ ██████╗ ██╗      █████╗  ██████╗███████╗███████╗
+ ██╔══██╗██║     ██╔══██╗██╔════╝██╔════╝██╔════╝
+ ██████╔╝██║     ███████║██║     █████╗  ███████╗
+ ██╔═══╝ ██║     ██╔══██║██║     ██╔══╝  ╚════██║
+ ██║     ███████╗██║  ██║╚██████╗███████╗███████║
+ ╚═╝     ╚══════╝╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝
+                                                  
+████████╗██████╗  █████╗  ██████╗██╗  ██╗███████╗██████╗ 
+╚══██╔══╝██╔══██╗██╔══██╗██╔════╝██║ ██╔╝██╔════╝██╔══██╗
+   ██║   ██████╔╝███████║██║     █████╔╝ █████╗  ██████╔╝
+   ██║   ██╔══██╗██╔══██║██║     ██╔═██╗ ██╔══╝  ██╔══██╗
+   ██║   ██║  ██║██║  ██║╚██████╗██║  ██╗███████╗██║  ██║
+   ╚═╝   ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+</pre>
+                <div class="welcome-text">
+                    <p>SYSTEM BOOTING...</p>
+                    <p>INITIALIZING PLACES DATABASE...</p>
+                    <p class="mt-20">Welcome! Enter your credentials to continue.</p>
+                    <p>New users will be registered automatically.</p>
+                </div>
+
+                <div class="form-container">
+                    <form id="registration-form" novalidate>
+                        <div class="form-group">
+                            <label class="form-label">ENTER YOUR NAME</label>
+                            <input type="text" name="username" class="form-input" placeholder="John Doe" required
+                                minlength="3" maxlength="50">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">ENTER YOUR EMAIL</label>
+                            <input type="email" name="email" class="form-input" placeholder="traveler@adventure.com"
+                                required>
+                        </div>
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-accent">CONTINUE</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div id="main-app" class="hidden">
+            <header class="app-header">
+                <h1 class="app-title">═══ PLACES TRACKER ═══</h1>
+                <div class="user-info">
+                    USER: <strong id="current-user-name">Loading...</strong>
+                    <button class="btn btn-small logout-btn" onclick="deleteAccount()">DELETE ACCOUNT</button>
+                    <button class="btn btn-small logout-btn" onclick="logout()">LOGOUT</button>
+                </div>
+            </header>
+
+            <nav class="nav-tabs">
+                <button class="nav-tab active" onclick="switchTab('all')">ALL PLACES</button>
+                <button class="nav-tab" onclick="switchTab('visited')">MY VISITED PLACES</button>
+            </nav>
+
+            <div class="toolbar">
+                <h2 class="section-title" id="section-title">ALL PLACES</h2>
+                <button class="btn btn-accent" onclick="openModal('add-place-modal')">ADD NEW PLACE</button>
+            </div>
+
+            <div id="places-container" hx-get="/places" hx-trigger="load" hx-swap="innerHTML">
+                <div class="loading">LOADING PLACES</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="add-place-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">+ ADD NEW PLACE</h2>
+                <button class="modal-close" onclick="closeModal('add-place-modal')">X</button>
+            </div>
+            <form id="add-place-form" novalidate>
+                <div class="form-group">
+                    <label class="form-label">PLACE NAME</label>
+                    <input type="text" name="name" class="form-input" placeholder="Eiffel Tower" required minlength="5"
+                        maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DESCRIPTION</label>
+                    <textarea name="description" class="form-textarea" placeholder="An amazing landmark in Paris..."
+                        required minlength="10" maxlength="1000"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ADDRESS</label>
+                    <input type="text" name="address" class="form-input" placeholder="Champ de Mars, Paris, France"
+                        required maxlength="255">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">LATITUDE</label>
+                        <input type="number" name="latitude" class="form-input" placeholder="48.8584" step="0.000001"
+                            min="-90" max="90" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">LONGITUDE</label>
+                        <input type="number" name="longitude" class="form-input" placeholder="2.2945" step="0.000001"
+                            min="-180" max="180" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">RATING (1-5)</label>
+                    <input type="number" name="averageRating" class="form-input" placeholder="5" min="1" max="5"
+                        required>
+                </div>
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-accent">CREATE PLACE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-place-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">EDIT PLACE</h2>
+                <button class="modal-close" onclick="closeModal('edit-place-modal')">X</button>
+            </div>
+            <form id="edit-place-form" novalidate>
+                <input type="hidden" id="edit-place-id">
+                <div class="form-group">
+                    <label class="form-label">PLACE NAME</label>
+                    <input type="text" name="name" id="edit-place-name" class="form-input" required minlength="5"
+                        maxlength="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">DESCRIPTION</label>
+                    <textarea name="description" id="edit-place-description" class="form-textarea" required
+                        minlength="10" maxlength="1000"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">ADDRESS</label>
+                    <input type="text" name="address" id="edit-place-address" class="form-input" required
+                        maxlength="255">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">LATITUDE</label>
+                        <input type="number" name="latitude" id="edit-place-lat" class="form-input" step="0.000001"
+                            min="-90" max="90" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">LONGITUDE</label>
+                        <input type="number" name="longitude" id="edit-place-lon" class="form-input" step="0.000001"
+                            min="-180" max="180" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">RATING (1-5)</label>
+                    <input type="number" name="averageRating" id="edit-place-rating" class="form-input" min="1" max="5"
+                        required>
+                </div>
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-accent">UPDATE PLACE</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="error-display" class="hidden">
+        <div class="error-overlay" onclick="hideError()"></div>
+        <div class="error-box">
+            <div class="error-header">╔═══ ERROR ═══╗</div>
+            <div class="error-message" id="error-message"></div>
+            <div class="error-actions">
+                <button class="btn btn-accent" onclick="hideError()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-display').classList.remove('hidden');
+        }
+
+        function hideError() {
+            document.getElementById('error-display').classList.add('hidden');
+        }
+
+        function getCurrentUser() {
+            const userId = localStorage.getItem('placesUserId');
+            const userName = localStorage.getItem('placesUserName');
+            return { userId, userName };
+        }
+
+        function setCurrentUser(userId, userName) {
+            localStorage.setItem('placesUserId', userId);
+            localStorage.setItem('placesUserName', userName);
+        }
+
+        function logout() {
+            localStorage.removeItem('placesUserId');
+            localStorage.removeItem('placesUserName');
+            location.reload();
+        }
+
+        async function deleteAccount() {
+            const { userId, userName } = getCurrentUser();
+
+            const confirmed = confirm(`DELETE ACCOUNT?\n\nUser: ${userName}\nThis action cannot be undone!\n\nPress OK to delete your account.`);
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/users/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    localStorage.removeItem('placesUserId');
+                    localStorage.removeItem('placesUserName');
+                    location.reload();
+                } else {
+                    showError('DELETE FAILED\nCould not delete account');
+                }
+            } catch (error) {
+                console.error('Error deleting account:', error);
+                showError('NETWORK ERROR\nFailed to delete account');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const { userId, userName } = getCurrentUser();
+
+            if (!userId) {
+                document.getElementById('welcome-screen').classList.remove('hidden');
+                document.getElementById('main-app').classList.add('hidden');
+            } else {
+                document.getElementById('welcome-screen').classList.add('hidden');
+                document.getElementById('main-app').classList.remove('hidden');
+                document.getElementById('current-user-name').textContent = userName;
+            }
+        });
+
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const username = e.target.username.value.trim();
+            const email = e.target.email.value.trim();
+
+            if (!username || username.length < 3) {
+                showError('VALIDATION ERROR\nUsername must be at least 3 characters');
+                return;
+            }
+            if (!email || !email.includes('@')) {
+                showError('VALIDATION ERROR\nPlease enter a valid email address');
+                return;
+            }
+
+            const data = {
+                username: username,
+                email: email
+            };
+
+            try {
+                const usersResponse = await fetch('/users');
+                if (usersResponse.ok) {
+                    const allUsers = await usersResponse.json();
+                    const existingUser = allUsers.find(u => u.email === email);
+                    if (existingUser) {
+                        setCurrentUser(existingUser.id, existingUser.username);
+                        location.reload();
+                        return;
+                    }
+                }
+
+                const data = {
+                    username: username,
+                    email: email
+                };
+
+                const response = await fetch('/users', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    setCurrentUser(user.id, user.username);
+                    location.reload();
+                } else {
+                    const error = await response.json();
+                    showError('REGISTRATION FAILED\n' + (error.error || 'Please try again'));
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showError('NETWORK ERROR\nCould not connect to server');
+            }
+        });
+
+        let currentTab = 'all';
+
+        function switchTab(tab) {
+            currentTab = tab;
+
+            document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const title = tab === 'all' ? 'ALL PLACES' : 'MY VISITED PLACES';
+            document.getElementById('section-title').textContent = title;
+
+            loadPlaces();
+        }
+
+        let allPlaces = [];
+        let visitedPlaceIds = new Set();
+
+        async function loadPlaces() {
+            try {
+                const placesResponse = await fetch('/places');
+                allPlaces = await placesResponse.json();
+
+                const { userId } = getCurrentUser();
+                visitedPlaceIds = new Set();
+
+                for (const place of allPlaces) {
+                    try {
+                        const visitResponse = await fetch(`/users/${userId}/places/${place.id}`);
+                        if (visitResponse.ok) {
+                            const data = await visitResponse.json();
+                            if (data.visited) {
+                                visitedPlaceIds.add(place.id);
+                            }
+                        }
+                    } catch (e) {
+                    }
+                }
+
+                renderPlaces();
+            } catch (error) {
+                console.error('Error loading places:', error);
+                document.getElementById('places-container').innerHTML = '<div class="empty-state">ERROR LOADING PLACES</div>';
+            }
+        }
+
+        function renderPlaces() {
+            let placesToShow = allPlaces;
+
+            if (currentTab === 'all') {
+                placesToShow = allPlaces.filter(p => !visitedPlaceIds.has(p.id));
+            } else {
+                placesToShow = allPlaces.filter(p => visitedPlaceIds.has(p.id));
+            }
+
+            const container = document.getElementById('places-container');
+
+            if (placesToShow.length === 0) {
+                const message = currentTab === 'visited'
+                    ? 'NO VISITED PLACES YET\nMark places as visited to see them here'
+                    : 'ALL PLACES VISITED!\nGreat job explorer!';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">［ ］</div>
+                        <p style="white-space: pre-line">${message}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="places-grid">
+                    ${placesToShow.map(place => `
+                        <div class="place-card ${currentTab === 'visited' ? 'visited' : ''}">
+                            <div class="place-header">
+                                <div class="place-name">${place.name}</div>
+                                <div class="place-rating">${'★'.repeat(place.rating)}</div>
+                            </div>
+                            <div class="place-description">${place.description}</div>
+                            <div class="place-meta">
+                                <div class="place-meta-item">LOCATION: ${place.address}</div>
+                                <div class="place-meta-item">COORDS: ${place.location.latitude.toFixed(4)}, ${place.location.longitude.toFixed(4)}</div>
+                            </div>
+                            <div class="place-actions">
+                                ${currentTab === 'all'
+                    ? `<button class="btn btn-small" onclick="markAsVisited('${place.id}')">MARK AS VISITED</button>`
+                    : `<button class="btn btn-small" onclick="unmarkVisited('${place.id}')">✗ UNMARK</button>`
+                }
+                                <button class="btn btn-small" onclick="editPlace('${place.id}')">✎ EDIT</button>
+                                <button class="btn btn-small btn-danger" onclick="deletePlace('${place.id}', '${place.name.replace(/'/g, "\\'")}')">🗑 DELETE</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        async function markAsVisited(placeId) {
+            const { userId } = getCurrentUser();
+
+            try {
+                const response = await fetch(`/users/${userId}/places/${placeId}`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    visitedPlaceIds.add(placeId);
+                    renderPlaces();
+                } else {
+                    showError('MARK FAILED\nCould not mark place as visited');
+                }
+            } catch (error) {
+                console.error('Error marking as visited:', error);
+                showError('NETWORK ERROR\nFailed to mark as visited');
+            }
+        }
+
+        async function unmarkVisited(placeId) {
+            const { userId } = getCurrentUser();
+
+            try {
+                const response = await fetch(`/users/${userId}/places/${placeId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    visitedPlaceIds.delete(placeId);
+                    renderPlaces();
+                } else {
+                    showError('UNMARK FAILED\\nCould not remove place from visited');
+                }
+            } catch (error) {
+                console.error('Error unmarking visited:', error);
+                showError('NETWORK ERROR\\nFailed to unmark place');
+            }
+        }
+
+        async function deletePlace(placeId, placeName) {
+            const confirmed = confirm(`DELETE PLACE?\n\nPlace: ${placeName}\nID: ${placeId}\n\nThis action cannot be undone!\n\nPress OK to delete this place.`);
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/places/${placeId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadPlaces();
+                } else if (response.status === 403) {
+                    const error = await response.json();
+                    showError('DELETE FORBIDDEN\n' + (error.error || 'Place deletion is disabled'));
+                } else if (response.status === 404) {
+                    showError('DELETE FAILED\nPlace not found');
+                } else {
+                    showError('DELETE FAILED\nCould not delete place');
+                }
+            } catch (error) {
+                console.error('Error deleting place:', error);
+                showError('NETWORK ERROR\nFailed to delete place');
+            }
+        }
+
+        function editPlace(placeId, placeName) {
+            const place = allPlaces.find(p => p.id === placeId);
+            if (!place) return;
+
+            document.getElementById('edit-place-id').value = place.id;
+            document.getElementById('edit-place-name').value = place.name;
+            document.getElementById('edit-place-description').value = place.description;
+            document.getElementById('edit-place-address').value = place.address;
+            document.getElementById('edit-place-lat').value = place.location.latitude;
+            document.getElementById('edit-place-lon').value = place.location.longitude;
+            document.getElementById('edit-place-rating').value = place.rating;
+
+            openModal('edit-place-modal');
+        }
+
+        document.getElementById('edit-place-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const placeId = document.getElementById('edit-place-id').value;
+            const name = e.target.name.value.trim();
+            const description = e.target.description.value.trim();
+            const address = e.target.address.value.trim();
+            const latitude = e.target.latitude.value;
+            const longitude = e.target.longitude.value;
+            const rating = e.target.averageRating.value;
+
+            if (!name || name.length < 5) {
+                showError('VALIDATION ERROR\\nPlace name must be at least 5 characters');
+                return;
+            }
+            if (!description || description.length < 10) {
+                showError('VALIDATION ERROR\\nDescription must be at least 10 characters');
+                return;
+            }
+            if (!address) {
+                showError('VALIDATION ERROR\\nPlease enter an address');
+                return;
+            }
+
+            const lat = parseFloat(latitude);
+            const lon = parseFloat(longitude);
+            if (isNaN(lat) || lat < -90 || lat > 90) {
+                showError('VALIDATION ERROR\\nLatitude must be between -90 and 90');
+                return;
+            }
+            if (isNaN(lon) || lon < -180 || lon > 180) {
+                showError('VALIDATION ERROR\\nLongitude must be between -180 and 180');
+                return;
+            }
+            if (!rating || rating < 1 || rating > 5) {
+                showError('VALIDATION ERROR\\nRating must be between 1 and 5');
+                return;
+            }
+
+            const data = {
+                name: name,
+                description: description,
+                address: address,
+                location: {
+                    latitude: lat,
+                    longitude: lon
+                },
+                averageRating: parseInt(rating)
+            };
+
+            try {
+                const response = await fetch(`/places/${placeId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    closeModal('edit-place-modal');
+                    loadPlaces();
+                } else {
+                    const error = await response.json();
+                    showError('UPDATE FAILED\\n' + (error.error || error.validation_errors || 'Invalid place data'));
+                }
+            } catch (error) {
+                console.error('Error updating place:', error);
+                showError('NETWORK ERROR\\nFailed to update place');
+            }
+        });
+
+        document.getElementById('add-place-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = e.target.name.value.trim();
+            const description = e.target.description.value.trim();
+            const address = e.target.address.value.trim();
+            const latitude = e.target.latitude.value;
+            const longitude = e.target.longitude.value;
+            const rating = e.target.averageRating.value;
+
+            if (!name || name.length < 5) {
+                showError('VALIDATION ERROR\nPlace name must be at least 5 characters');
+                return;
+            }
+            if (!description || description.length < 10) {
+                showError('VALIDATION ERROR\nDescription must be at least 10 characters');
+                return;
+            }
+            if (!address) {
+                showError('VALIDATION ERROR\nPlease enter an address');
+                return;
+            }
+            if (!latitude || !longitude) {
+                showError('VALIDATION ERROR\nPlease enter latitude and longitude');
+                return;
+            }
+            const lat = parseFloat(latitude);
+            const lon = parseFloat(longitude);
+            if (isNaN(lat) || lat < -90 || lat > 90) {
+                showError('VALIDATION ERROR\nLatitude must be between -90 and 90');
+                return;
+            }
+            if (isNaN(lon) || lon < -180 || lon > 180) {
+                showError('VALIDATION ERROR\nLongitude must be between -180 and 180');
+                return;
+            }
+            if (!rating || rating < 1 || rating > 5) {
+                showError('VALIDATION ERROR\nRating must be between 1 and 5');
+                return;
+            }
+
+            const data = {
+                name: name,
+                description: description,
+                address: address,
+                location: {
+                    latitude: lat,
+                    longitude: lon
+                },
+                averageRating: parseInt(rating)
+            };
+
+            try {
+                const response = await fetch('/places', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    closeModal('add-place-modal');
+                    e.target.reset();
+                    loadPlaces();
+                } else {
+                    const error = await response.json();
+                    showError('CREATE FAILED\n' + (error.error || error.validation_errors || 'Invalid place data'));
+                }
+            } catch (error) {
+                console.error('Error creating place:', error);
+                showError('NETWORK ERROR\nFailed to create place');
+            }
+        });
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        });
+
+        document.body.addEventListener('htmx:afterSwap', (event) => {
+            if (event.target.id === 'places-container') {
+                loadPlaces();
+            }
+        });
+    </script>
+</body>
+
+</html>

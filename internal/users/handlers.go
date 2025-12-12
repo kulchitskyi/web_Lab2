@@ -253,6 +253,44 @@ func (h *Handler) CheckIfVisited(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// DELETE /users/{id}/places/{place_id}
+func (h *Handler) RemoveVisitedPlace(w http.ResponseWriter, r *http.Request) {
+	parts := strings.Split(r.URL.Path, "/")
+	
+	if len(parts) < 5 || parts[2] == "" || parts[4] == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Missing user ID or place ID"})
+		return
+	}
+	userID := parts[2]
+	placeID := parts[4]
+	
+	if err := validate.Var(userID, "required,uuid"); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "User ID must be a valid UUID"})
+		return
+	}
+
+	if err := validate.Var(placeID, "required,uuid"); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Place ID must be a valid UUID"})
+		return
+	}
+
+	err := h.Service.RemoveVisitedPlace(r.Context(), userID, placeID)
+
+	if err != nil {
+		switch err {
+		case er.ErrUserNotFound:
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "User not found"})
+		case er.ErrPlaceNotFound:
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "Place not found"})
+		default:
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"status": "Place removed from user's visited list"})
+}
+
 // DELETE /users
 func (h *Handler) DeleteAll(w http.ResponseWriter, r *http.Request) {
 	err := h.Service.DeleteAll(r.Context())

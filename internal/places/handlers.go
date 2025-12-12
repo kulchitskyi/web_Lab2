@@ -59,7 +59,8 @@ func validateAndGetID(w http.ResponseWriter, parts []string) (string, bool) {
 }
 
 type Handler struct {
-	Service *PlaceService
+	Service       *PlaceService
+	AllowDeletion bool
 }
 
 // GET /places
@@ -152,6 +153,11 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /places/{id}
 func (h *Handler) DeleteById(w http.ResponseWriter, r *http.Request) {
+	if !h.AllowDeletion {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Place deletion is disabled by system configuration"})
+		return
+	}
+
 	parts := strings.Split(r.URL.Path, "/")
 	
 	id, ok := validateAndGetID(w, parts)
@@ -174,6 +180,11 @@ func (h *Handler) DeleteById(w http.ResponseWriter, r *http.Request) {
 
 // DELETE /places
 func (h *Handler) DeleteAll(w http.ResponseWriter, r *http.Request) {
+	if !h.AllowDeletion {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Place deletion is disabled by system configuration"})
+		return
+	}
+
 	err := h.Service.DeleteAll(r.Context())
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})

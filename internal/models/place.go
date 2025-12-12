@@ -1,13 +1,36 @@
 package models
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
+
 	"gorm.io/gorm"
 )
 
 type Location struct {
-	Latitude    float64  `json:"latitude" validate:"required,latitude"`
-	Longitude   float64  `json:"longitude" validate:"required,longitude"`
+	Latitude  float64 `json:"latitude" validate:"required,latitude"`
+	Longitude float64 `json:"longitude" validate:"required,longitude"`
+}
+
+// Value implements driver.Valuer interface for JSONB storage
+func (l Location) Value() (driver.Value, error) {
+	return json.Marshal(l)
+}
+
+// Scan implements sql.Scanner interface for JSONB retrieval
+func (l *Location) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("failed to unmarshal JSONB value")
+	}
+
+	return json.Unmarshal(bytes, l)
 }
 
 type PlaceCreateRequest struct {

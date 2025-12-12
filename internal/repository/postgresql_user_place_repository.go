@@ -44,3 +44,12 @@ func (r *PostgresUserPlaceRepository) HasVisitedPlace(ctx context.Context, userI
 
 	return false, err
 }
+
+func (r *PostgresUserPlaceRepository) RemoveVisitedPlace(ctx context.Context, userID, placeID string) error {
+	result := r.DB.WithContext(ctx).
+		Where("user_id = ?", userID).
+		Where("place_id = ?", placeID).
+		Delete(&models.UserPlace{})
+	
+	return result.Error
+}

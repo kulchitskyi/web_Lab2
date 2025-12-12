@@ -106,6 +106,24 @@ func (s *UserService) HasVisitedPlace(ctx context.Context, userID, placeID strin
     return s.userPlaceRepo.HasVisitedPlace(ctx, userID, placeID)
 }
 
+func (s *UserService) RemoveVisitedPlace(ctx context.Context, userID, placeID string) error {
+    if userID == "" || placeID == "" {
+        return er.ErrInvalidUserData
+    }
+
+    _, userErr := s.repo.GetByID(ctx, userID)
+    if userErr != nil {
+        return userErr
+    }
+    
+    _, placeErr := s.placeRepo.GetByID(ctx, placeID)
+    if placeErr != nil {
+        return placeErr
+    }
+
+    return s.userPlaceRepo.RemoveVisitedPlace(ctx, userID, placeID)
+}
+
 func (s *UserService) DeleteAll(ctx context.Context) error {
     return s.repo.DeleteAll(ctx)
 }

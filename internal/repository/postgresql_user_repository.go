@@ -64,7 +64,7 @@ func (r *PostgresUserRepository) Update(ctx context.Context, id string, u *model
 }
 
 func (r *PostgresUserRepository) Delete(ctx context.Context, id string) error {
-	result := r.DB.WithContext(ctx).Where("id = ?", id).Delete(&models.User{})
+	result := r.DB.WithContext(ctx).Unscoped().Where("id = ?", id).Delete(&models.User{})
 	
 	if result.Error != nil {
 		return result.Error
